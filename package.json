@@ -1,0 +1,14 @@
+{
+  "name": "autoshare-web",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i ./static/tailwind.input.css -o ./static/tailwind.css --minify"
+  },
+  "dependencies": {
+    "leaflet": "1.9.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "4.3.0",
+    "tailwindcss": "4.3.0"
+  }
+}

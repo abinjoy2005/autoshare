@@ -1,60 +1,49 @@
-from contextlib import asynccontextmanager
 import json
 import logging
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from google import genai
-from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.schemas import (
-    NaturalLanguageQuery,
-    ParsedRideIntent,
-    RideRequestCreate,
-    WaypointDrop,
-)
-from app.engine import FareSplitter, MatchingEngine
-from app.websocket_manager import ConnectionManager
+from app.engine import FareSplitter
+from app.models import User
+from app.routers import auth, drivers, rides
+from app.schemas import NaturalLanguageQuery, ParsedRideIntent, UserPublic, WaypointDrop
+from app.security import get_current_user, require_role
 
 load_dotenv()
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 logger = logging.getLogger(__name__)
+BASE_DIR = Path(__file__).resolve().parent.parent
 CORS_ORIGINS = [
     origin.strip()
-    for origin in os.getenv(
-        "CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
-    ).split(",")
+    for origin in os.getenv("CORS_ORIGINS", "").split(",")
     if origin.strip()
 ]
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    yield
-
-
-app = FastAPI(title="AutoShare Engine", lifespan=lifespan)
+app = FastAPI(title="AutoShare", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
-    allow_credentials=False,
+    allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type", "X-Admin-API-Key"],
 )
 
-manager = ConnectionManager()
-matching_engine = MatchingEngine()
+app.include_router(auth.router)
+app.include_router(drivers.router)
+app.include_router(rides.router)
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
-def parse_ride_prompt(query: str) -> dict:
+def parse_ride_prompt(query: str) -> dict[str, object]:
     if client is None:
         raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured")
     try:
@@ -66,8 +55,11 @@ def parse_ride_prompt(query: str) -> dict:
                 "response_schema": ParsedRideIntent,
             },
         )
-        return json.loads(response.text)
-    except (genai.errors.APIError, ValueError, TypeError, KeyError) as exc:
+        if not response.text:
+            raise ValueError("Gemini returned an empty response")
+        result = ParsedRideIntent.model_validate(json.loads(response.text))
+        return result.model_dump()
+    except (genai.errors.APIError, ValueError, TypeError) as exc:
         logger.exception("Ride intent extraction failed")
         raise HTTPException(
             status_code=502, detail="Ride intent could not be extracted"
@@ -75,29 +67,30 @@ def parse_ride_prompt(query: str) -> dict:
 
 
 @app.post("/api/parse-ride", response_model=ParsedRideIntent)
-def parse_ride(payload: NaturalLanguageQuery):
+def parse_ride(
+    payload: NaturalLanguageQuery,
+    _: User = Depends(require_role("rider")),
+):
     return parse_ride_prompt(payload.query)
 
 
-@app.post("/api/ride-requests")
-def create_ride_request(
-    payload: RideRequestCreate,
-    db: Session = Depends(get_db),
-):
-    result = matching_engine.add_request(db, payload)
-    db.commit()
-    return result
+@app.get("/api/me", response_model=UserPublic)
+def current_user(user: User = Depends(get_current_user)) -> UserPublic:
+    return UserPublic.model_validate(user)
+
 
 @app.post("/api/split-fare")
 async def calculate_split(drops: list[WaypointDrop]):
     return FareSplitter.calculate_waypoint_split(drops)
 
-@app.websocket("/ws/cursors")
-async def websocket_cursor_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            await manager.broadcast(data, websocket)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+
+@app.get("/api/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.get("/")
+def index():
+    from fastapi.responses import FileResponse
+
+    return FileResponse(BASE_DIR / "static" / "index.html")
