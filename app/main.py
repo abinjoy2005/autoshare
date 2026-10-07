@@ -3,12 +3,11 @@ import json
 import logging
 import os
 
-import google.generativeai as genai
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from google.api_core.exceptions import GoogleAPIError
+from google import genai
 from sqlalchemy.orm import Session
 
 from app.database import get_db, init_db
@@ -22,7 +21,8 @@ from app.engine import FareSplitter, MatchingEngine
 from app.websocket_manager import ConnectionManager
 
 load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 logger = logging.getLogger(__name__)
 CORS_ORIGINS = [
@@ -56,19 +56,19 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 def parse_ride_prompt(query: str) -> dict:
-    if not os.getenv("GEMINI_API_KEY"):
+    if client is None:
         raise HTTPException(status_code=503, detail="GEMINI_API_KEY is not configured")
     try:
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        response = model.generate_content(
-            query,
-            generation_config={
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=query,
+            config={
                 "response_mime_type": "application/json",
                 "response_schema": ParsedRideIntent,
             },
         )
         return json.loads(response.text)
-    except (GoogleAPIError, ValueError, TypeError, KeyError) as exc:
+    except (genai.errors.APIError, ValueError, TypeError, KeyError) as exc:
         logger.exception("Ride intent extraction failed")
         raise HTTPException(
             status_code=502, detail="Ride intent could not be extracted"
