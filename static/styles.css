@@ -1,0 +1,154 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background-color: #0d1117;
+  color: #e6edf3;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+#cursor-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999;
+}
+
+.ghost-cursor {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #58a6ff;
+  box-shadow: 0 0 8px #58a6ff;
+  transition: transform 0.08s ease-out;
+}
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #238636;
+  margin-right: 6px;
+}
+
+.nlp-section {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+#nlp-input {
+  flex: 1;
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #fff;
+  padding: 0.85rem 1.2rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+#nlp-submit {
+  background: #1f6feb;
+  color: white;
+  border: none;
+  padding: 0 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.card.urgent {
+  border-color: #f85149;
+  box-shadow: 0 0 12px rgba(248, 81, 73, 0.15);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.badge {
+  background: #f85149;
+  color: white;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.timer-box {
+  margin: 1.25rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #21262d;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+}
+
+.timer-value {
+  font-family: monospace;
+  font-size: 1.2rem;
+  color: #f85149;
+  font-weight: 700;
+}
+
+.fare-estimate {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.join-btn {
+  background: #238636;
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}

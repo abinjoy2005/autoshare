@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoShare Live Dashboard</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div id="cursor-layer"></div>
+
+  <div class="container">
+    <header>
+      <div class="logo">⚡ AutoShare</div>
+      <div class="status-indicator">
+        <span class="pulse-dot"></span> <span id="peer-count">Live</span>
+      </div>
+    </header>
+
+    <section class="nlp-section">
+      <input 
+        type="text" 
+        id="nlp-input" 
+        placeholder="Type a request (e.g. 'Need an auto for 2 to Angamaly station in 10 mins')..."
+      />
+      <button id="nlp-submit">Find Match</button>
+    </section>
+
+    <main class="grid">
+      <div class="card urgent" id="ride-1">
+        <div class="card-header">
+          <h3>ASIET Gate → Angamaly Station</h3>
+          <span class="badge">2 / 3 Seats</span>
+        </div>
+        <p class="route-details">Waypoints: Mattoor, Kalady Jn</p>
+        
+        <div class="timer-box">
+          <span class="timer-label">Departure Window:</span>
+          <span id="countdown" class="timer-value">05:00</span>
+        </div>
+
+        <div class="fare-estimate">
+          <span>Est. Fare: <strong>₹45 / rider</strong></span>
+          <button class="join-btn">Claim Last Seat</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
