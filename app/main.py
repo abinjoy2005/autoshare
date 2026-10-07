@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from google import genai
 from sqlalchemy.orm import Session
 
-from app.database import get_db, init_db
+from app.database import get_db
 from app.schemas import (
     NaturalLanguageQuery,
     ParsedRideIntent,
@@ -36,7 +36,6 @@ CORS_ORIGINS = [
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db()
     yield
 
 
