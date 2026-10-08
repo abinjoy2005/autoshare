@@ -35,17 +35,17 @@ def _distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return EARTH_RADIUS_KM * 2 * math.asin(math.sqrt(min(1.0, haversine)))
 
 
-def _has_verified_vehicle(db: Session, driver_id: int) -> bool:
-    return (
-        db.scalar(
-            select(Vehicle.id).where(
-                Vehicle.driver_id == driver_id,
-                Vehicle.is_active.is_(True),
-                Vehicle.verification_status == "verified",
-            )
-        )
-        is not None
-    )
+def _has_verified_vehicle(
+    db: Session, driver_id: int, exclude_vehicle_id: int | None = None
+) -> bool:
+    conditions = [
+        Vehicle.driver_id == driver_id,
+        Vehicle.is_active.is_(True),
+        Vehicle.verification_status == "verified",
+    ]
+    if exclude_vehicle_id is not None:
+        conditions.append(Vehicle.id != exclude_vehicle_id)
+    return db.scalar(select(Vehicle.id).where(*conditions)) is not None
 
 
 @router.post("/drivers/me/vehicles", response_model=VehiclePublic, status_code=201)
@@ -234,7 +234,7 @@ def verify_driver_vehicle(
 
     vehicle.verification_status = "verified" if verified else "rejected"
     driver.is_verified = verified or _has_verified_vehicle(
-        db, driver_id
+        db, driver_id, exclude_vehicle_id=vehicle.id
     )
     if not driver.is_verified:
         driver.is_online = False

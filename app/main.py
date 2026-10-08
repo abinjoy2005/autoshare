@@ -2,12 +2,14 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Annotated
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from google import genai
+from pydantic import Field
 
 from app.engine import FareSplitter
 from app.models import User
@@ -80,7 +82,12 @@ def current_user(user: User = Depends(get_current_user)) -> UserPublic:
 
 
 @app.post("/api/split-fare")
-async def calculate_split(drops: list[WaypointDrop]):
+async def calculate_split(
+    drops: Annotated[list[WaypointDrop], Field(min_length=1, max_length=8)],
+):
+    passenger_ids = [drop.passenger_id for drop in drops]
+    if len(set(passenger_ids)) != len(passenger_ids):
+        raise HTTPException(status_code=422, detail="Passenger IDs must be unique")
     return FareSplitter.calculate_waypoint_split(drops)
 
 

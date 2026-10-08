@@ -131,6 +131,14 @@ class RideCreate(BaseModel):
     dropoff_latitude: float | None = Field(default=None, ge=-90, le=90)
     dropoff_longitude: float | None = Field(default=None, ge=-180, le=180)
 
+    @field_validator("pickup", "dropoff")
+    @classmethod
+    def trim_location_name(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) < 2:
+            raise ValueError("Location must contain at least two non-space characters")
+        return value
+
     @model_validator(mode="after")
     def validate_coordinate_pairs(self):
         for latitude, longitude, label in (
@@ -168,9 +176,17 @@ class RidePublic(BaseModel):
 
 
 class WaypointDrop(BaseModel):
-    passenger_id: str
-    destination: str
+    passenger_id: str = Field(min_length=1, max_length=128)
+    destination: str = Field(min_length=1, max_length=255)
     distance_km: float = Field(ge=0)
+
+    @field_validator("passenger_id", "destination")
+    @classmethod
+    def trim_waypoint_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Passenger ID and destination cannot be blank")
+        return value
 
 
 class FareSplitResult(BaseModel):
