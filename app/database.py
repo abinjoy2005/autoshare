@@ -21,7 +21,14 @@ if url.drivername in {"postgresql", "postgres", "postgresql+pg8000"}:
     sslmode = query.pop("sslmode", None)
     url = url.set(drivername="postgresql+pg8000", query=query)
     if sslmode != "disable":
-        connect_args["ssl_context"] = ssl.create_default_context()
+        certificate_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "certs", "prod-ca-2021.crt")
+        )
+        ssl_context = ssl.create_default_context()
+        ssl_context.load_verify_locations(cafile=certificate_path)
+        ssl_context.verify_mode = ssl.CERT_REQUIRED
+        ssl_context.check_hostname = True
+        connect_args["ssl_context"] = ssl_context
     engine_options.update(
         pool_pre_ping=True,
         pool_size=1,
