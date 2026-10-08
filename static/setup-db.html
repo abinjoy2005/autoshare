@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>AutoShare database setup</title>
+  <style>
+    body { background: #0b1220; color: #e2e8f0; font: 16px system-ui, sans-serif; margin: 0; min-height: 100vh; display: grid; place-items: center; }
+    main { background: #111827; border: 1px solid #334155; border-radius: 1rem; box-sizing: border-box; max-width: 32rem; padding: 2rem; width: calc(100% - 2rem); }
+    h1 { margin-top: 0; }
+    p { color: #cbd5e1; line-height: 1.5; }
+    label { display: block; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+    input, button { box-sizing: border-box; font: inherit; padding: 0.75rem; width: 100%; }
+    input { background: #020617; border: 1px solid #475569; border-radius: 0.5rem; color: inherit; }
+    button { background: #059669; border: 0; border-radius: 0.5rem; color: white; cursor: pointer; font-weight: 700; margin-top: 1rem; }
+    button:disabled { cursor: wait; opacity: 0.65; }
+    #result { min-height: 1.5rem; overflow-wrap: anywhere; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Database setup</h1>
+    <p>This action creates any missing application tables. Enter the administrator API key to continue.</p>
+    <form id="setup-form">
+      <label for="admin-key">Administrator API key</label>
+      <input id="admin-key" type="password" autocomplete="off" required>
+      <button id="setup-button" type="submit">Create database tables</button>
+    </form>
+    <p id="result" role="status" aria-live="polite"></p>
+  </main>
+  <script>
+    const form = document.getElementById('setup-form');
+    const keyInput = document.getElementById('admin-key');
+    const button = document.getElementById('setup-button');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      button.disabled = true;
+      result.textContent = 'Creating database tables…';
+      const adminKey = keyInput.value;
+      keyInput.value = '';
+
+      try {
+        const response = await fetch('/api/setup-db', {
+          method: 'POST',
+          headers: { 'X-Admin-API-Key': adminKey }
+        });
+        const body = await response.json();
+        if (!response.ok) {
+          throw new Error(body.detail || `Setup failed (${response.status})`);
+        }
+        result.textContent = body.message;
+      } catch (error) {
+        result.textContent = error.message || 'Database setup failed.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -46,6 +46,13 @@ app.include_router(rides.router)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 
+@app.get("/api/setup-db")
+def setup_db_page():
+    from fastapi.responses import FileResponse
+
+    return FileResponse(BASE_DIR / "static" / "setup-db.html")
+
+
 @app.post("/api/setup-db")
 def setup_db(x_admin_api_key: str | None = Header(default=None)) -> dict[str, str]:
     expected_key = os.getenv("ADMIN_API_KEY")
