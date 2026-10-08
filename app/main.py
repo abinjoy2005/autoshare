@@ -1,3 +1,4 @@
+import hmac
 import json
 import logging
 import os
@@ -5,7 +6,7 @@ from pathlib import Path
 from typing import Annotated
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from google import genai
@@ -43,6 +44,23 @@ app.include_router(auth.router)
 app.include_router(drivers.router)
 app.include_router(rides.router)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+
+
+@app.post("/api/setup-db")
+def setup_db(x_admin_api_key: str | None = Header(default=None)) -> dict[str, str]:
+    expected_key = os.getenv("ADMIN_API_KEY")
+    if not expected_key or len(expected_key) < 32:
+        raise HTTPException(
+            status_code=503,
+            detail="ADMIN_API_KEY must be configured with at least 32 characters",
+        )
+    if not x_admin_api_key or not hmac.compare_digest(x_admin_api_key, expected_key):
+        raise HTTPException(status_code=403, detail="Administrator authorization failed")
+
+    from app.database import Base, engine
+
+    Base.metadata.create_all(bind=engine)
+    return {"message": "Database tables created successfully"}
 
 
 def parse_ride_prompt(query: str) -> dict[str, object]:
